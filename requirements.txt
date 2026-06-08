@@ -1,0 +1,29 @@
+# ==============================================================================
+# Production Dependencies
+# ==============================================================================
+# Pydantic v2 core validation engine (Python 3.13 compatible)
+pydantic==2.10.4
+
+# Settings management loading environment variables into Pydantic models
+pydantic-settings==2.7.0
+
+# HTTP requests library for direct Gemini & GitHub REST API connections
+requests==2.32.3
+
+# Loads key-value pairs from .env files into system environment
+python-dotenv==1.0.1
+
+# Backported type hints compatibility helpers (standard for typing support)
+typing-extensions==4.12.2
+
+# ==============================================================================
+# Development & Testing Dependencies (Optional)
+# ==============================================================================
+# Framework for executing unit and integration tests
+pytest==8.3.4
+
+# Mocking utility for intercepting and stubbing requests HTTP requests
+responses==0.25.3
+
+# Async helper plugin for executing asynchronous test suites in pytest
+pytest-asyncio==0.25.0
