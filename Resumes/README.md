@@ -1,2 +1,0 @@
-# Team mates Resumes
-
