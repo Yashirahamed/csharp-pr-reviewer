@@ -248,23 +248,23 @@ class ReviewAgent(IReviewer):
     def _get_findings_schema(self) -> dict[str, Any]:
         """Returns the OpenAPI schema representation of a findings review output."""
         return {
-            "type": "OBJECT",
+            "type": "object",
             "properties": {
                 "findings": {
-                    "type": "ARRAY",
+                    "type": "array",
                     "description": "List of C# code quality and design findings.",
                     "items": {
-                        "type": "OBJECT",
+                        "type": "object",
                         "properties": {
-                            "file_path": {"type": "STRING"},
-                            "line_number": {"type": "INTEGER"},
-                            "rule_id": {"type": "STRING"},
-                            "category": {"type": "STRING"},
-                            "severity": {"type": "STRING"},
-                            "title": {"type": "STRING"},
-                            "description": {"type": "STRING"},
-                            "suggestion": {"type": "STRING"},
-                            "confidence_score": {"type": "NUMBER"}
+                            "file_path": {"type": "string"},
+                            "line_number": {"type": "integer"},
+                            "rule_id": {"type": "string"},
+                            "category": {"type": "string"},
+                            "severity": {"type": "string"},
+                            "title": {"type": "string"},
+                            "description": {"type": "string"},
+                            "suggestion": {"type": "string"},
+                            "confidence_score": {"type": "number"}
                         },
                         "required": ["file_path", "line_number", "rule_id", "category", "severity", "title", "description"]
                     }
