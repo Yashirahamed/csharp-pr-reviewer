@@ -104,12 +104,14 @@ class ReviewAgent(IReviewer):
                         
                         raw_response = await self.llm_client.generate_structured_content(
                             prompt=user_prompt,
-                            system_instruction=system_inst
+                            system_instruction=system_inst,
+                            response_schema=self._get_findings_schema()
                         )
                         
                         # 3. VALIDATE
                         self.state_machine.transition_to(AgentState.VALIDATING)
                         try:
+        
                             json_data = json.loads(raw_response)
                             findings_list = self.validator.validate_schema(json_data)
                             
@@ -240,3 +242,31 @@ class ReviewAgent(IReviewer):
             summary_markdown="### Gemini Automated Code Review Summary\n\nNo modified C# files found in this PR. Skipping analysis.",
             stats=context.get_summary_stats()
         )
+
+    def _get_findings_schema(self) -> dict[str, Any]:
+        """Returns the OpenAPI schema representation of a findings review output."""
+        return {
+            "type": "object",
+            "properties": {
+                "findings": {
+                    "type": "array",
+                    "description": "List of C# code quality and design findings.",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "file_path": {"type": "string"},
+                            "line_number": {"type": "integer"},
+                            "rule_id": {"type": "string"},
+                            "category": {"type": "string"},
+                            "severity": {"type": "string"},
+                            "title": {"type": "string"},
+                            "description": {"type": "string"},
+                            "suggestion": {"type": "string"},
+                            "confidence_score": {"type": "number"}
+                        },
+                        "required": ["file_path", "line_number", "rule_id", "category", "severity", "title", "description"]
+                    }
+                }
+            },
+            "required": ["findings"]
+        }
