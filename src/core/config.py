@@ -31,6 +31,12 @@ class AppConfig(BaseSettings):
 
     gemini_temperature: float = Field(default=0.1, ge=0.0, le=1.0)
 
+    # LLM Provider Configurations
+    llm_provider: str = Field(default="gemini", validation_alias="LLM_PROVIDER")
+    openrouter_api_key: str = Field(default="", validation_alias="OPENROUTER_API_KEY")
+    primary_model: str = Field(default="google/gemini-2.5-flash", validation_alias="PRIMARY_MODEL")
+    fallback_model: str = Field(default="deepseek/deepseek-chat", validation_alias="FALLBACK_MODEL")
+
     # Review Settings
     exclude_paths: list[str] = Field(default=["**/bin/**", "**/obj/**", "**/*.g.cs"])
     max_comments_per_pr: int = Field(default=30, ge=1, le=100)
@@ -53,8 +59,12 @@ class AppConfig(BaseSettings):
             missing.append("GITHUB_REPOSITORY")
         if self.github_pr_number <= 0:
             missing.append("GITHUB_PR_NUMBER")
-        if not self.gemini_api_key:
-            missing.append("GEMINI_API_KEY")
+        if self.llm_provider.lower() == "gemini":
+            if not self.gemini_api_key:
+                missing.append("GEMINI_API_KEY")
+        elif self.llm_provider.lower() == "openrouter":
+            if not self.openrouter_api_key:
+                missing.append("OPENROUTER_API_KEY")
 
         if missing:
             raise ConfigurationException(
