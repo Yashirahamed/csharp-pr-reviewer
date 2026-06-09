@@ -111,9 +111,7 @@ class ReviewAgent(IReviewer):
                         # 3. VALIDATE
                         self.state_machine.transition_to(AgentState.VALIDATING)
                         try:
-                            logger.info(
-                                f"RAW LLM RESPONSE: {raw_response}"
-                            )
+        
                             json_data = json.loads(raw_response)
                             findings_list = self.validator.validate_schema(json_data)
                             
