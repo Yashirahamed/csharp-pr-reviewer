@@ -72,7 +72,7 @@ class GeminiClient(ILLMClient):
         # Execution retry variables
         max_attempts = 3
         backoff_delay = 1.5
-        timeout_seconds = 30.0
+        timeout_seconds = 60.0
 
         logger.info(
             "Sending generateContent request to Gemini API.",

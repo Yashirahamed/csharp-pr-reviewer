@@ -104,7 +104,8 @@ class ReviewAgent(IReviewer):
                         
                         raw_response = await self.llm_client.generate_structured_content(
                             prompt=user_prompt,
-                            system_instruction=system_inst
+                            system_instruction=system_inst,
+                            response_schema=self._get_findings_schema()
                         )
                         
                         # 3. VALIDATE
@@ -240,3 +241,31 @@ class ReviewAgent(IReviewer):
             summary_markdown="### Gemini Automated Code Review Summary\n\nNo modified C# files found in this PR. Skipping analysis.",
             stats=context.get_summary_stats()
         )
+
+    def _get_findings_schema(self) -> dict[str, Any]:
+        """Returns the OpenAPI schema representation of a findings review output."""
+        return {
+            "type": "OBJECT",
+            "properties": {
+                "findings": {
+                    "type": "ARRAY",
+                    "description": "List of C# code quality and design findings.",
+                    "items": {
+                        "type": "OBJECT",
+                        "properties": {
+                            "file_path": {"type": "STRING"},
+                            "line_number": {"type": "INTEGER"},
+                            "rule_id": {"type": "STRING"},
+                            "category": {"type": "STRING"},
+                            "severity": {"type": "STRING"},
+                            "title": {"type": "STRING"},
+                            "description": {"type": "STRING"},
+                            "suggestion": {"type": "STRING"},
+                            "confidence_score": {"type": "NUMBER"}
+                        },
+                        "required": ["file_path", "line_number", "rule_id", "category", "severity", "title", "description"]
+                    }
+                }
+            },
+            "required": ["findings"]
+        }
