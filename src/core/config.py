@@ -23,7 +23,12 @@ class AppConfig(BaseSettings):
 
     # Gemini API Configurations
     gemini_api_key: str = Field(default="", validation_alias="GEMINI_API_KEY")
-    gemini_model_name: str = Field(default="gemini-1.5-flash")
+
+    gemini_model_name: str = Field(
+        default="gemini-2.5-flash",
+        validation_alias="GEMINI_MODEL_NAME"
+    )
+
     gemini_temperature: float = Field(default=0.1, ge=0.0, le=1.0)
 
     # Review Settings
