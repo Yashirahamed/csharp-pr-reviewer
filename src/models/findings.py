@@ -16,7 +16,19 @@ class Finding(BaseModel):
     @field_validator("severity")
     @classmethod
     def validate_severity(cls, v: str) -> str:
+        # Normalize casing and map common variations
+        v_norm = v.strip().title()
+        mapping = {
+            "Error": "High",
+            "Major": "High",
+            "Minor": "Medium",
+            "Warning": "Medium",
+            "Information": "Info",
+            "Informational": "Info"
+        }
+        v_resolved = mapping.get(v_norm, v_norm)
+
         valid_severities = {"Critical", "High", "Medium", "Low", "Info"}
-        if v not in valid_severities:
+        if v_resolved not in valid_severities:
             raise ValueError(f"Severity must be one of: {', '.join(valid_severities)}")
-        return v
+        return v_resolved

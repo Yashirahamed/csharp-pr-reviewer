@@ -3,7 +3,6 @@ import asyncio
 import logging
 import os
 import sys
-from typing import Any
 
 # Core Configuration & Logging
 from src.core.config import AppConfig
@@ -17,14 +16,11 @@ from src.interfaces.llm_client import ILLMClient
 from src.interfaces.reviewer import IReviewer
 
 # Domain Models
-from src.models.pull_request import PullRequest
-from src.models.findings import Finding
 from src.models.review import Review
 
 # Integrations
 from src.integrations.github.github_client import GitHubClient
 from src.integrations.gemini.gemini_client import GeminiClient
-from src.integrations.openrouter.openrouter_client import OpenRouterClient
 
 # Services
 from src.services.diff.csharp_filter import CSharpFileFilter
@@ -47,109 +43,8 @@ from src.agent.review_agent import ReviewAgent
 logger = logging.getLogger("ReviewEngine")
 
 
-class MockGitHubClient(IGitHubClient):
-    """Mock implementation of the GitHub REST API client for local simulation."""
-
-    async def get_pull_request(self, pr_number: int) -> PullRequest:
-        logger.info(
-            "MockGitHubClient: Fetching Pull Request metadata.",
-            extra={"context": {"pr_number": pr_number}}
-        )
-        return PullRequest(
-            pr_number=pr_number,
-            title="Refactor Data Sync Service to use Async Streams",
-            description="Replaces batch streams with Async Enumerables.",
-            state="open",
-            is_draft=False,
-            head_sha="a1b2c3d4e5f67890a1b2c3d4e5f67890abcdef12",
-            base_sha="f6e5d4c3b2a10987f6e5d4c3b2a10987abcdef12",
-            html_url=f"https://github.com/AcmeOrg/enterprise-backend/pull/{pr_number}"
-        )
-
-    async def get_changed_files(self, pr_number: int) -> list[dict[str, Any]]:
-        logger.info(
-            "MockGitHubClient: Fetching changed files list.",
-            extra={"context": {"pr_number": pr_number}}
-        )
-        return [
-            {
-                "filename": "src/Core/Services/Sync.cs",
-                "status": "modified",
-                "additions": 14,
-                "deletions": 2,
-                "changes": 16,
-                "patch": (
-                    "@@ -10,3 +10,4 @@ public class Sync {\n"
-                    "+    public async Task RunAsync() {\n"
-                    "+        var x = await FetchAsync();\n"
-                    "     }\n"
-                )
-            }
-        ]
-
-    async def get_raw_diff(self, pr_number: int) -> str:
-        logger.info(
-            "MockGitHubClient: Fetching raw unified diff stream.",
-            extra={"context": {"pr_number": pr_number}}
-        )
-        return (
-            "@@ -10,3 +10,4 @@ public class Sync {\n"
-            "+    public async Task RunAsync() {\n"
-            "+        var x = await FetchAsync();\n"
-            "     }\n"
-        )
-
-    async def submit_review(self, pr_number: int, review: Review) -> None:
-        logger.info(
-            "MockGitHubClient: Submitting review and comments to PR.",
-            extra={
-                "context": {
-                    "pr_number": pr_number,
-                    "verdict": review.verdict,
-                    "comments_count": len(review.findings)
-                }
-            }
-        )
-
-    async def get_review_comments(self, pr_number: int) -> list[dict[str, Any]]:
-        logger.info(
-            "MockGitHubClient: Fetching existing review comments.",
-            extra={"context": {"pr_number": pr_number}}
-        )
-        return []
-
-
-class MockLLMClient(ILLMClient):
-    """Mock implementation of the Gemini API client for local simulation."""
-
-    async def generate_structured_content(
-        self, 
-        prompt: str, 
-        system_instruction: str | None = None,
-        response_schema: dict[str, Any] | None = None
-    ) -> str:
-        logger.info("MockLLMClient: Sending prompts and schema options to Gemini API.")
-        return (
-            "{\n"
-            "  \"findings\": [\n"
-            "    {\n"
-            "      \"file_path\": \"src/Core/Services/Sync.cs\",\n"
-            "      \"line_number\": 11,\n"
-            "      \"rule_id\": \"CS-PERF-01\",\n"
-            "      \"category\": \"Performance\",\n"
-            "      \"severity\": \"High\",\n"
-            "      \"title\": \"Avoid blocking async call\",\n"
-            "      \"description\": \"Ensure asynchronous calls do not block execution threads.\",\n"
-            "      \"suggestion\": \"var x = await FetchAsync();\",\n"
-            "      \"confidence_score\": 0.95\n"
-            "    }\n"
-            "  ]\n"
-            "}"
-        )
-
-
 async def bootstrap() -> None:
-    """Configures the container and executes the PR review orchestrator workflow."""
+    """Configures the container and executes the production PR review orchestrator workflow."""
     # 1. Load Configurations from environment variables
     config = AppConfig()
     
@@ -161,9 +56,12 @@ async def bootstrap() -> None:
         os.makedirs(os.path.dirname(log_file), exist_ok=True)
         
     configure_logging(level=config.log_level, log_file=log_file)
-    logger.info("Initializing system configurations and logging pipeline.")
+    logger.info("Initializing production review engine configuration and logging pipeline.")
 
-    # 3. Setup dependency injection registrations
+    # 3. Enforce validation check and fail fast if parameters are missing
+    config.validate_required_credentials()
+
+    # 4. Setup dependency injection registrations
     container = Container()
     container.reset()
     container.register_singleton(AppConfig, config)
@@ -188,42 +86,16 @@ async def bootstrap() -> None:
     container.register_singleton(ReviewFormatter, formatter)
     container.register_singleton(ReviewSummaryGenerator, summary_generator)
 
-    # 4. Check if simulation mode is active
-    is_simulation = not (config.github_token and config.github_repository and config.gemini_api_key)
+    # Register concrete clients for remote executions
+    container.register_singleton(IGitHubClient, GitHubClient(config))
     
-    if is_simulation:
-        logger.warning(
-            "Running in LOCAL SIMULATION mode. Required environment parameters not set.",
-            extra={
-                "context": {
-                    "GITHUB_TOKEN": "SET" if config.github_token else "NOT_SET",
-                    "GITHUB_REPOSITORY": "SET" if config.github_repository else "NOT_SET",
-                    "GEMINI_API_KEY": "SET" if config.gemini_api_key else "NOT_SET"
-                }
-            }
-        )
-        container.register_singleton(IGitHubClient, MockGitHubClient())
-        container.register_singleton(ILLMClient, MockLLMClient())
-        target_pr = config.github_pr_number if config.github_pr_number > 0 else 421
+    if config.llm_provider.lower() == "openrouter":
+        from src.integrations.openrouter.openrouter_client import OpenRouterClient
+        container.register_singleton(ILLMClient, OpenRouterClient(config))
     else:
-        # Enforce validation checks for production runs
-        config.validate_required_credentials()
-        container.register_singleton(IGitHubClient, GitHubClient(config))
-
-        if config.llm_provider.lower() == "openrouter":
-            container.register_singleton(
-                ILLMClient,
-                OpenRouterClient(config)
-            )
-        else:
-            container.register_singleton(
-                ILLMClient,
-                GeminiClient(config)
-            )
-
-            target_pr = config.github_pr_number
-
-    # 5. Register remaining orchestrator services
+        container.register_singleton(ILLMClient, GeminiClient(config))
+    
+    # Register remaining orchestrator services
     container.register_factory(
         PublishManager,
         lambda: PublishManager(
@@ -251,10 +123,13 @@ async def bootstrap() -> None:
         )
     )
 
-    logger.info("Service registrations completed inside Container.")
+    logger.info("Production services configured in Container.")
 
-    # 6. Execute Review Loop
+    # 5. Execute Review Loop
+    target_pr = config.github_pr_number
     reviewer = container.resolve(IReviewer)
+    
+    logger.info(f"Starting production review loop for PR #{target_pr}...")
     review_output = await reviewer.review_pull_request(target_pr)
     
     # Report metrics
@@ -270,7 +145,7 @@ async def bootstrap() -> None:
         }
     )
 
-    # 7. Shutdown Sequence
+    # 6. Shutdown Sequence
     logger.info("Executing shutdown sequence and releasing resources.")
     github_client = container.resolve(IGitHubClient)
     if hasattr(github_client, "close"):

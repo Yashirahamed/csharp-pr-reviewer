@@ -22,6 +22,10 @@ class ReviewValidator:
         Raises:
             ValidationException: If the schema layout is invalid.
         """
+        if isinstance(raw_data, list):
+            logger.info("validate_schema: Automatically wrapping flat JSON list in findings dictionary.")
+            raw_data = {"findings": raw_data}
+
         if not isinstance(raw_data, dict):
             raise ValidationException(
                 message="Gemini JSON response is not structured as an object dictionary."

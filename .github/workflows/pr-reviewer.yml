@@ -4,7 +4,7 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
     paths:
-      - '**/*.cs'
+      - '**'
 
 permissions:
   contents: read
@@ -35,9 +35,14 @@ jobs:
       - name: Run AI Reviewer Engine
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_PR_NUMBER: ${{ github.event.pull_request.number }}
+
+          LLM_PROVIDER: openrouter
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+
+          PRIMARY_MODEL: google/gemini-2.5-flash
+          FALLBACK_MODEL: deepseek/deepseek-chat
         run: python -m src.main
 
       - name: Upload Run Logs
