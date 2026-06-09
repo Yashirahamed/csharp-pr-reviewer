@@ -24,6 +24,7 @@ from src.models.review import Review
 # Integrations
 from src.integrations.github.github_client import GitHubClient
 from src.integrations.gemini.gemini_client import GeminiClient
+from src.integrations.openrouter.openrouter_client import OpenRouterClient
 
 # Services
 from src.services.diff.csharp_filter import CSharpFileFilter
@@ -208,8 +209,19 @@ async def bootstrap() -> None:
         # Enforce validation checks for production runs
         config.validate_required_credentials()
         container.register_singleton(IGitHubClient, GitHubClient(config))
-        container.register_singleton(ILLMClient, GeminiClient(config))
-        target_pr = config.github_pr_number
+
+        if config.llm_provider.lower() == "openrouter":
+            container.register_singleton(
+                ILLMClient,
+                OpenRouterClient(config)
+            )
+        else:
+            container.register_singleton(
+                ILLMClient,
+                GeminiClient(config)
+            )
+
+            target_pr = config.github_pr_number
 
     # 5. Register remaining orchestrator services
     container.register_factory(
