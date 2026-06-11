@@ -105,7 +105,7 @@ class OpenRouterClient(ILLMClient):
             "messages": messages,
             "response_format": response_format,
             "temperature": self.config.gemini_temperature,
-            "max_tokens": 2000
+            "max_tokens": 800
         }
         
         logger.info(
