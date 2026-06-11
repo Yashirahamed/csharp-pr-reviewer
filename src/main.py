@@ -89,11 +89,8 @@ async def bootstrap() -> None:
     # Register concrete clients for remote executions
     container.register_singleton(IGitHubClient, GitHubClient(config))
     
-    if config.llm_provider.lower() == "openrouter":
-        from src.integrations.openrouter.openrouter_client import OpenRouterClient
-        container.register_singleton(ILLMClient, OpenRouterClient(config))
-    else:
-        container.register_singleton(ILLMClient, GeminiClient(config))
+    from src.integrations.llm_router import LLMRouter
+    container.register_singleton(ILLMClient, LLMRouter(config))
     
     # Register remaining orchestrator services
     container.register_factory(
