@@ -38,7 +38,7 @@ class AppConfig(BaseSettings):
     fallback_model: str = Field(default="deepseek/deepseek-chat", validation_alias="FALLBACK_MODEL")
 
     # Review Settings
-    exclude_paths: list[str] = Field(default=["**/bin/**", "**/obj/**", "**/*.g.cs"])
+    exclude_paths: list[str] = Field(default=["**/bin/**", "**/obj/**", "**/*.g.cs",".history/**"])
     max_comments_per_pr: int = Field(default=30, ge=1, le=100)
     log_level: str = Field(default="INFO")
     dry_run: bool = Field(default=False, validation_alias="DRY_RUN")
