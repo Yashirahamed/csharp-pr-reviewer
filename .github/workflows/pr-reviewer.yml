@@ -37,17 +37,15 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_PR_NUMBER: ${{ github.event.pull_request.number }}
-
-          # Primary Provider: Gemini
-          PRIMARY_LLM_PROVIDER: gemini
-          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
-          PRIMARY_MODEL: gemini-2.5-flash
-          
-
-          # Fallback Provider: OpenRouter
-          FALLBACK_LLM_PROVIDER: openrouter
+        
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          LLM_PROVIDER: gemini
+        
+          PRIMARY_MODEL: google/gemini-2.5-flash
+        
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           FALLBACK_MODEL: deepseek/deepseek-chat
+          
 
         run: python -m src.main
 
