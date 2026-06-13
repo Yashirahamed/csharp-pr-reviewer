@@ -1,4 +1,7 @@
-def test_diff_not_empty():
-    diff_content = "+ public class Test"
+from src.services.diff.diff_parser import DiffParser
 
-    assert len(diff_content) > 0
+def test_parser_creation():
+
+    parser = DiffParser()
+
+    assert parser is not None
